@@ -61,11 +61,10 @@ static std::pair<float*, float*> allocate_matrix_and_input_vec(int m, int n) {
     std::random_device rd;
     std::mt19937 gen(rd());
 
-    /*
-     * We purposely pick a distribution whose values lie outside the bounds of INT8, to
-     * show how linear quantization would work.
+    /**
+     * Normalized weight values
      */
-    std::uniform_real_distribution dist(-5000.0f, 5000.0f);
+    std::uniform_real_distribution dist(0.0f, 1.0f);
 
     for (int i = 0; i < m; i++) {
         for (int j = 0; j < n; j++) {
@@ -123,6 +122,14 @@ static int8_t* quantize_matrix(const float* matrix, int m, int n, float* scale, 
     return quantized_matrix;
 }
 
+float loss_function(const float* result, const float* quantized_res, int m) {
+    float loss = 0.0f;
+    for (int i = 0; i < m; i++) {
+        loss += powf(result[i] - quantized_res[i], 2);
+    }
+    return loss / static_cast<float>(m);
+}
+
 void print_result(const float* result) {
     std::cout << "Result vector (first 5 entries): ";
     std::cout << "[";
@@ -170,6 +177,8 @@ int main() {
     std::cout << "Quantized Execution time: " << elapsed.count() << " seconds." << std::endl;
 
     print_result(quant_res);
+
+    std::cout << "Loss: " << loss_function(result, quant_res, m) << std::endl;
 
     delete[] quant_res;
     delete[] quantized_matrix;
