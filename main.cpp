@@ -103,7 +103,13 @@ static int8_t* quantize_matrix(const float* matrix, int m, int n, float* scale, 
     int8_t q_min = INT8_MIN;
 
     *scale = (r_max - r_min) / static_cast<float>(q_max - q_min);
-    *zero_point = static_cast<int8_t>(roundf(static_cast<float>(q_min) - r_min / *scale));
+    *zero_point = static_cast<int8_t>(
+        std::clamp(
+            static_cast<int32_t>(roundf(static_cast<float>(q_min) - r_min / *scale)),
+            static_cast<int32_t>(q_min),
+            static_cast<int32_t>(q_max)
+        )
+    );
 
     auto* quantized_matrix = new int8_t[m*n];
 
